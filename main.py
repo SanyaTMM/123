@@ -1,8 +1,6 @@
 import pygame
 import sys
 
-import self as self
-
 import new_db
 
 pygame.init()
@@ -13,7 +11,7 @@ class Game:
     def __init__(self):
         self.screen = pygame.display.set_mode((820, 400))
 
-        self.coins = 0
+        self.score = 0
         self.hp = 3
 
         self.f_left = True
@@ -29,7 +27,7 @@ class Game:
 
         self.coin = pygame.transform.scale(pygame.image.load("png/coin1.png").convert_alpha(), (25, 25))
         self.krug_hp = pygame.transform.scale(pygame.image.load("png/hp.png").convert_alpha(), (60, 40))
-        self.galka = pygame.transform.scale(pygame.image.load("png/galka.png").convert_alpha(), (40, 20))
+        self.galka = pygame.transform.scale(pygame.image.load("png/hp.png").convert_alpha(), (40, 20))
 
         self.coin1 = self.coin.get_rect(topleft=(120, 45))
         self.coin2 = self.coin.get_rect(topleft=(770, 50))
@@ -56,8 +54,6 @@ class Game:
         self.bluelines = [self.line4, self.line5, self.line6, self.line8, self.line9, self.line10]
 
         self.krug_speed = 3
-
-        self.score = 0
 
         self.all_coins = [self.coin1, self.coin2, self.coin3, self.coin4]
 
@@ -190,6 +186,7 @@ class Game:
                     if event.key == pygame.K_RETURN:
                         self.vrag_rect.center = (50, 110)
                         self.hp = 3
+                        self.score = 0
                         restart = True
 
             self.screen.fill("#E3E3E3")
@@ -215,7 +212,7 @@ class Game:
 
             #resultat
             self.screen.blit(font_25.render("Результат", True, "#E81931"), (540, 280))
-            self.screen.blit(font_40.render(f"{self.coins}", True, "#3EBDF8"), (540, 317))
+            self.screen.blit(font_40.render(f"{self.score}", True, "#3EBDF8"), (540, 317))
 
             best_score = new_db.user_info(self.name)
             self.screen.blit(font_25.render("Рекорд", True, "#E81931"), (700, 280))
@@ -347,7 +344,7 @@ class Game:
             self.vrag_move()
 
             if self.hp == 0:
-                new_db.add_score(self.name, self.coins)
+                new_db.add_score(self.name, self.score)
                 self.leaderbord()
 
             pygame.display.update()
