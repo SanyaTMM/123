@@ -1,6 +1,12 @@
 import pygame
 import sys
 
+import self as self
+
+import new_db
+
+pygame.init()
+
 
 class Game:
 
@@ -23,12 +29,13 @@ class Game:
 
         self.coin = pygame.transform.scale(pygame.image.load("png/coin1.png").convert_alpha(), (25, 25))
         self.krug_hp = pygame.transform.scale(pygame.image.load("png/hp.png").convert_alpha(), (60, 40))
+        self.galka = pygame.transform.scale(pygame.image.load("png/galka.png").convert_alpha(), (40, 20))
 
         self.coin1 = self.coin.get_rect(topleft=(120, 45))
         self.coin2 = self.coin.get_rect(topleft=(770, 50))
         self.coin3 = self.coin.get_rect(topleft=(70, 255))
         self.coin4 = self.coin.get_rect(topleft=(610, 255))
-        self.coins = [self.coin1, self.coin2, self.coin3, self.coin4]
+        self.coins2 = [self.coin1, self.coin2, self.coin3, self.coin4]
 
         width = 4
         self.line1 = pygame.Rect(0, 40, 820, width)
@@ -53,6 +60,13 @@ class Game:
         self.score = 0
 
         self.all_coins = [self.coin1, self.coin2, self.coin3, self.coin4]
+
+        self.coins_sound = pygame.mixer.Sound("songs/Coin.wav")
+        self.line_sound = pygame.mixer.Sound("songs/Hit.wav")
+
+        self.name = "user1"
+
+        self.skin = 1
 
     def vrag_move(self):
         x = self.vrag_rect.center[0]
@@ -113,6 +127,106 @@ class Game:
         self.f_up = True
         self.f_down = True
 
+    def draw_intro(self):
+        end = True
+
+        while end:
+            self.screen.fill("#E3E3E3")
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        end = False
+            self.screen.fill("black")
+            pygame.display.update()
+
+    def leaderbord(self, nem_db=None):
+        def draw_skin(i):
+            user_id = new_db.user_info(self.name)[0][0]
+            skin_list = new_db.user_skins(user_id)
+
+            s = new_db.get_skin_info(i)
+
+            r = pygame.Rect(40, 40, 40, 40)
+
+            if i < 5:
+                r.center = (60, 120 + (i - 1) * 60)
+
+            else:
+                r.center = (270, 120 + (i - 5) * 60)
+
+            pygame.draw.circle(self.screen, s["color1"], r.center, 20, width=s["width"], )
+            pygame.draw.circle(self.screen, s["color2"], r.center, 20 - s["width"], )
+
+            # i = skin_id
+            if i in skin_list:
+                self.screen.blit(self.galka, (r.topright[0] + 20, r.topright[1] - 3))
+            else:
+                self.screen.blit(font_40.render(f"{s['cost']}", True, "#E81931"),
+                                 (r.topright[0] + 20, r.topright[1] - 3)),
+
+            if self.skin == i:
+                pygame.draw.rect(self.screen, "#f25757", rect=(r.x -5, r.y - 5, 50, 50), width=2, border_radius=5)
+
+            #draw skin
+            if pygame.mouse.get_pressed()[0]:
+                if r.collidepoint(pygame.mouse.get_pos()):
+                    if i in skin_list:
+                        self.skin = i
+                    else:
+                        new_db.buy_skin(i, self.name, s['cost'])
+
+        restart = False
+        font_40 = pygame.font.SysFont("arial", 40)
+        font_30 = pygame.font.SysFont("arial", 30)
+        font_25 = pygame.font.SysFont("arial", 25)
+
+        while not restart:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        self.vrag_rect.center = (50, 110)
+                        self.hp = 3
+                        restart = True
+
+            self.screen.fill("#E3E3E3")
+            pygame.draw.line(self.screen, "#3EBDF8", (500, 0), (500, 400), 4)
+            pygame.draw.line(self.screen, "#3EBDF8", (500, 270), (820, 270), 4)
+
+            #skin store
+            balance = new_db.user_info(self.name)[0][2]
+            self.screen.blit(font_40.render("Магазин скинов", True, "#E81931"), (40, 10))
+            self.screen.blit(font_25.render(f"{balance}", True, "#E81931"), (350, 23))
+
+            #leaderboard
+            leaders = new_db.lb()
+            self.screen.blit(font_40.render("Лучшие игроки", True, "#E81931"), (540, 10))
+            self.screen.blit(font_30.render(f"{leaders[0][1]}", True, "#3EBDF8"), (540, 100))
+            self.screen.blit(font_30.render(f"{leaders[0][3]}", True, "#3EBDF8"), (700, 100))
+
+            self.screen.blit(font_30.render(f"{leaders[1][1]}", True, "#3EBDF8"), (540, 150))
+            self.screen.blit(font_30.render(f"{leaders[1][3]}", True, "#3EBDF8"), (700, 150))
+
+            self.screen.blit(font_30.render(f"{leaders[2][1]}", True, "#3EBDF8"), (540, 200))
+            self.screen.blit(font_30.render(f"{leaders[2][3]}", True, "#3EBDF8"), (700, 200))
+
+            #resultat
+            self.screen.blit(font_25.render("Результат", True, "#E81931"), (540, 280))
+            self.screen.blit(font_40.render(f"{self.coins}", True, "#3EBDF8"), (540, 317))
+
+            best_score = new_db.user_info(self.name)
+            self.screen.blit(font_25.render("Рекорд", True, "#E81931"), (700, 280))
+            self.screen.blit(font_40.render(f"{best_score[0][3]}", True, "#3EBDF8"), (700, 317))
+
+            # skins
+            for i in range(1, 9):
+                draw_skin(i)
+
+            pygame.display.update()
+
     def run(self):
         """Main game method"""
         clock = pygame.time.Clock()
@@ -159,6 +273,7 @@ class Game:
                 if line.colliderect(self.krug_rect):
                     self.krug_rect.center = (410, 200)
                     self.hp -= 1
+                    self.line_sound.play()
 
             # blueline collision
             for line in self.bluelines:
@@ -196,17 +311,28 @@ class Game:
             self.screen.blit(font.render(str(self.score), True, (255, 50, 50)), (760, -10))
 
             # blit coin
-            for c in self.coins:
+            for c in self.coins2:
                 self.screen.blit(self.coin, c)
                 if c.colliderect(self.krug_rect):
                     self.score += 1
-                    ind = self.coins.index(c)
-                    self.coins.pop(ind)
+                    ind = self.coins2.index(c)
+                    self.coins2.pop(ind)
+                    self.coins_sound.play()
+                if self.vrag_rect.colliderect(c):
+                    ind = self.coins2.index(c)
+                    self.coins2.pop(ind)
+                    self.coins_sound.play()
 
-            if len(self.coins) <= 2:
+            if len(self.coins2) <= 2:
                 for s in self.all_coins:
-                    if s not in self.coins:
-                        self.coins.append(s)
+                    if s not in self.coins2:
+                        self.coins2.append(s)
+
+            if self.vrag_rect.colliderect(self.krug_rect):
+                self.krug_rect.center = (410, 200)
+                self.hp -= 1
+                self.line_sound.play()
+                self.vrag_rect.center = (50, 110)
 
             # blit lines
             for line in self.redlines:
@@ -215,14 +341,19 @@ class Game:
                 pygame.draw.rect(self.screen, "#3EBDF8", line)
 
             # blit hp
-            self.screen.blit(self.krug_hp, (-10, 0))
-            self.screen.blit(self.krug_hp, (30, 0))
-            self.screen.blit(self.krug_hp, (70, 0))
+            for i in range(self.hp):
+                self.screen.blit(self.krug_hp, (2 + 47 * i, 2))
 
             self.vrag_move()
+
+            if self.hp == 0:
+                new_db.add_score(self.name, self.coins)
+                self.leaderbord()
 
             pygame.display.update()
 
 
+
 if __name__ == "__main__":
     Game().run()
+
